@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://b1kr1lgq38e67"]
+
+[ext_resource type="Script" uid="uid://c7nucu7rn8oym" path="res://Main.cs" id="1_ig7tw"]
+[ext_resource type="PackedScene" uid="uid://datcer3s31q2s" path="res://cannon.tscn" id="2_0xm2m"]
+[ext_resource type="PackedScene" uid="uid://d326a4mh1hio6" path="res://brick.tscn" id="2_1bvp3"]
+[ext_resource type="Script" uid="uid://b021cmipicje4" path="res://DespawnZone.cs" id="3_h2yge"]
+
+[sub_resource type="SegmentShape2D" id="SegmentShape2D_7dm0k"]
+
+[sub_resource type="SegmentShape2D" id="SegmentShape2D_ig7tw"]
+
+[sub_resource type="SegmentShape2D" id="SegmentShape2D_0xm2m"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1bvp3"]
+
+[node name="Main" type="Node2D" unique_id=2129081226 node_paths=PackedStringArray("_walls", "_leftWall", "_rightWall", "_topWall")]
+script = ExtResource("1_ig7tw")
+_walls = NodePath("Walls")
+_leftWall = NodePath("Walls/LeftWall")
+_rightWall = NodePath("Walls/RightWall")
+_topWall = NodePath("Walls/TopWall")
+BrickScene = ExtResource("2_1bvp3")
+
+[node name="Walls" type="Node2D" parent="." unique_id=1705868467]
+
+[node name="LeftWall" type="StaticBody2D" parent="Walls" unique_id=1762604513]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/LeftWall" unique_id=107149397]
+shape = SubResource("SegmentShape2D_7dm0k")
+
+[node name="RightWall" type="StaticBody2D" parent="Walls" unique_id=111019297]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/RightWall" unique_id=1917294478]
+shape = SubResource("SegmentShape2D_ig7tw")
+
+[node name="TopWall" type="StaticBody2D" parent="Walls" unique_id=1049383864]
+position = Vector2(0, -3)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/TopWall" unique_id=2026038686]
+shape = SubResource("SegmentShape2D_0xm2m")
+
+[node name="Cannon" parent="." unique_id=1781897213 instance=ExtResource("2_0xm2m")]
+
+[node name="DespawnZone" type="Area2D" parent="." unique_id=583628937]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("3_h2yge")
+
+[node name="DespawnCollisionShape" type="CollisionShape2D" parent="DespawnZone" unique_id=1694878448]
+shape = SubResource("RectangleShape2D_1bvp3")
+
+[node name="BricksContainer" type="Node2D" parent="." unique_id=558619934]
+
+[connection signal="body_entered" from="DespawnZone" to="Cannon" method="OnBallLanded"]

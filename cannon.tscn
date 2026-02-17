@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://datcer3s31q2s"]
+
+[ext_resource type="Script" uid="uid://ga3sfk2fwxgo" path="res://Cannon.cs" id="1_i10un"]
+[ext_resource type="PackedScene" uid="uid://c748gwfi2esag" path="res://ball.tscn" id="2_23j6s"]
+
+[node name="Cannon" type="Node2D" unique_id=1781897213]
+script = ExtResource("1_i10un")
+BallScene = ExtResource("2_23j6s")
+metadata/_edit_group_ = true
+
+[node name="ShootPoint" type="Marker2D" parent="." unique_id=562563317]
+position = Vector2(560, 540)
+
+[node name="AimLine" type="Line2D" parent="." unique_id=1197945486]
+width = 6.0
+default_color = Color(1, 1, 1, 0.91764706)

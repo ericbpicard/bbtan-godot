@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://d326a4mh1hio6"]
+
+[ext_resource type="Script" uid="uid://bw6j5wsqe4qq3" path="res://Brick.cs" id="1_awxk8"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_5p85m"]
+
+[node name="Brick" type="StaticBody2D" unique_id=481764754]
+script = ExtResource("1_awxk8")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2079612990]
+shape = SubResource("RectangleShape2D_5p85m")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=515765542]
+
+[node name="Label" type="Label" parent="." unique_id=142931985]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
