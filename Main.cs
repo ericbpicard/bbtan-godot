@@ -145,11 +145,8 @@ public partial class Main : Node2D
 			GD.Print(powerup.CollisionLayer);
 
 		}
-
 		_currentLevel++;
 		//_cannon?.IncreaseBallsPerShot();
-
-
 	}
 
 	// Helper to move all existing bricks down
@@ -166,7 +163,7 @@ public partial class Main : Node2D
 
 	public void SetDamageMult(int dmg)
 	{
-		this._dmg*=dmg;
+		this._dmg *= dmg;
 	}
 
 	public void ResetDamageMult()

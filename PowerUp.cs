@@ -104,6 +104,7 @@ public partial class PowerUp : Area2D
 			case PowerUpType.DoubleDamage:
 				// Example: Set global damage multiplier (add to Ball.cs or Main)
 				_main?.SetDamageMult(2);  // Implement below
+				_cannon?.ScaleExistingBalls();
 				break;
 		}
 		QueueFree();  // Destroy

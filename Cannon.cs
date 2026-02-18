@@ -8,18 +8,19 @@ using System.Threading.Tasks;
 public partial class Cannon : Node2D
 {
 	[Export] public PackedScene BallScene { get; set; }  // Assign ball.tscn in Inspector
-	[Export] public Line2D AimLine { get; set; }
 	[Export] public float ShootForce { get; set; } = 1800f;  // Tune speed
 	[Export] public float BallSpread = 6f;
 	[Export] public float ShootCooldown = 0.06f;
 	[Export] public int BallsPerShot = 1;
-	private Vector2 dragStart;
+	private Vector2 _dragStart;
 	private bool isDragging = false;
 	private Ball restingBall;  // Pre-shot ball at tip
 	private List<Ball> activeBalls = new();
 	private Timer cooldownTimer;
 	private bool canShoot = true;
 	private bool hasRestingBall = false;
+	private Line2D _aimLine;
+	private Line2D _aimLineBounce;
 	private Main? _main;
 	public float _ballRadius = 12f;
 
@@ -35,8 +36,41 @@ public partial class Cannon : Node2D
 		Position = new Vector2(screenSize.X / 2f, screenSize.Y - 50f);
 		SpawnRestingBall(Vector2.Zero);
 		canShoot = true;
-		AimLine = GetNode<Line2D>("AimLine");
-		AimLine.Visible = false;
+		_aimLine = GetNode<Line2D>("AimLine");
+		_aimLine.Visible = false;
+		_aimLineBounce = GetNode<Line2D>("AimLineBounce");
+		_aimLineBounce.Visible = false;
+
+		var spacingFactor = 3f;  // Adjust: >1.0 for gaps, 1.0 for touching
+
+
+		var baseImg = Ball.CreateBallImage(_ballRadius);
+		var diameter = baseImg.GetHeight();  // Assuming square (height = width)
+		var period = (int)(diameter * spacingFactor);
+
+		// Create wider image for spacing (ball + gap)
+		var repeatImg = Image.CreateEmpty(period, diameter, false, Image.Format.Rgba8);
+
+		// Blit the ball into the left part (centered if needed)
+		repeatImg.BlitRect(baseImg, new Rect2I(0, 0, diameter, diameter), new Vector2I(0, 0));
+		_aimLine.TextureRepeat = _aimLineBounce.TextureRepeat= CanvasItem.TextureRepeatEnum.Enabled;
+		_aimLine.Texture = _aimLineBounce.Texture = ImageTexture.CreateFromImage(baseImg);
+		_aimLine.TextureMode = _aimLineBounce.TextureMode = Line2D.LineTextureMode.Tile;
+		_aimLine.Width = _aimLineBounce.Width =diameter;
+
+		// NEW: Fade-out gradient**
+		// var grad = new Gradient();
+		// grad.AddPoint(0.0f, new Color(1, 1, 1, 1.0f));
+		// grad.AddPoint(1.0f, new Color(1, 1, 1, 0.0f));
+		//AimLine.Gradient = grad;
+
+		// // NEW: Tapered width (thins at end for polish)**
+		// var widthCurve = new Curve();
+		// widthCurve.AddPoint(new Vector2(0.0f, 1.0f));
+		// widthCurve.AddPoint(new Vector2(0.7f, 1.0f));
+		// widthCurve.AddPoint(new Vector2(1.0f, 0.3f));
+		// AimLine.WidthCurve = widthCurve;
+		// AimLine.Width = 5.0f;  // Base width (tscn has 6.0; adjust taste)
 
 	}
 
@@ -56,18 +90,19 @@ public partial class Cannon : Node2D
 				{
 					if (mouseButton.Pressed)
 					{
-						dragStart = mouseButton.Position;  // Screen pos
+						_dragStart = mouseButton.Position;  // Screen pos
 						isDragging = true;
 					}
 					else if (isDragging)
 					{
 						var dragEnd = mouseButton.Position;
 						GD.Print(dragEnd);
-						var raw = (dragStart - dragEnd).Normalized();  // Pull-back = shoot dir
+						var raw = (_dragStart - dragEnd).Normalized();  // Pull-back = shoot dir
 						var aimVector = GetClampedAimVector(raw);
 						canShoot = false;
 						Shoot(aimVector);
-						AimLine.Visible = false;
+						_aimLine.Visible = _aimLineBounce.Visible = false;
+
 						isDragging = false;
 						//Rotation = 0;  // Reset rotation
 					}
@@ -76,23 +111,76 @@ public partial class Cannon : Node2D
 			else if (@event is InputEventMouseMotion mouseMotion && isDragging)
 			{
 				var currentDragPos = mouseMotion.Position;
-				var raw = (dragStart - currentDragPos).Normalized();
-				var lineVector = GetClampedAimVector(raw);
-				AimLine.Visible = true;
-				GD.Print(currentDragPos);
-				AimLine.ClearPoints();
-				AimLine.AddPoint(restingBall.Position);           // start at cannon
-				AimLine.AddPoint(restingBall.Position + lineVector * 2500);          // long line in shoot direction
+				var raw = (_dragStart - currentDragPos).Normalized();
+				UpdateAimPreview(GetClampedAimVector(raw));
+				_aimLine.Visible = _aimLineBounce.Visible = true;
 			}
 		}
 		// For touch: Swap to InputEventScreenTouch (similar logic)
 	}
 
-	private void UpdateAimPreview()
+	private void UpdateAimPreview(Vector2 dir)
 	{
+		if (restingBall == null)
+		{
+			_aimLine.ClearPoints();
+			_aimLineBounce.ClearPoints();
+			_aimLine.Visible = _aimLineBounce.Visible = false;
+			return;
+		}
 
-		///implement a bouncing dotted aimline
-		if (restingBall == null) return;
+		var spaceState = GetWorld2D().DirectSpaceState;
+		Vector2 globalStart = restingBall.GlobalPosition;
+		Vector2 globalFar = globalStart + dir * 1200f;
+
+		// FIRST SEGMENT: Start → First Hit
+		var query = PhysicsRayQueryParameters2D.Create(globalStart, globalFar);
+		query.CollisionMask = 1;
+		query.HitFromInside = false;
+		var firstHit = spaceState.IntersectRay(query);
+
+		_aimLine.ClearPoints();
+		Vector2 localStart = ToLocal(globalStart);
+		_aimLine.AddPoint(localStart);
+		if (firstHit.Count > 0)
+		{
+			Vector2 hitPosG = firstHit["position"].AsVector2();
+			Vector2 localHit = ToLocal(hitPosG);
+			_aimLine.AddPoint(localHit);
+		}
+		else
+		{
+			Vector2 localFar = ToLocal(globalFar);
+			_aimLine.AddPoint(localFar);
+		}
+		_aimLine.Visible = true;
+
+		// SECOND SEGMENT: Bounce → End (separate line = no distortion)
+		_aimLineBounce.ClearPoints();
+		if (firstHit.Count > 0)
+		{
+			Vector2 hitPosG = firstHit["position"].AsVector2();
+			Vector2 hitNormalG = firstHit["normal"].AsVector2();
+			Vector2 reflectDir = dir.Bounce(hitNormalG);
+			Vector2 secondStartG = hitPosG + hitNormalG * 0.02f;  // Epsilon offset (hides overlap)
+			Vector2 secondFarG = secondStartG + reflectDir * 900f;
+
+			var q2 = PhysicsRayQueryParameters2D.Create(secondStartG, secondFarG);
+			q2.CollisionMask = 1;
+			var secondHit = spaceState.IntersectRay(q2);
+
+			Vector2 secondEndG = secondHit.Count > 0 ? secondHit["position"].AsVector2() : secondFarG;
+			Vector2 localBounceStart = ToLocal(secondStartG);
+			Vector2 localSecondEnd = ToLocal(secondEndG);
+
+			_aimLineBounce.AddPoint(localBounceStart);
+			_aimLineBounce.AddPoint(localSecondEnd);
+			_aimLineBounce.Visible = true;
+		}
+		else
+		{
+			_aimLineBounce.Visible = false;
+		}
 	}
 
 	public void SpawnRestingBall(Vector2 position)
@@ -184,10 +272,10 @@ public partial class Cannon : Node2D
 	private Vector2 GetClampedAimVector(Vector2 rawDirection)
 	{
 		// rawDirection is already normalized
-		if (rawDirection.Y > -0.25f)   // not pointing up enough
+		if (rawDirection.Y > -0.15f)   // not pointing up enough
 		{
 			// Force minimum upward angle
-			return new Vector2(rawDirection.X, -0.25f).Normalized();
+			return new Vector2(rawDirection.X, -0.15f).Normalized();
 		}
 
 		return rawDirection;   // already good
@@ -197,5 +285,13 @@ public partial class Cannon : Node2D
 	{
 		BallsPerShot += amount;
 		GD.Print($"Balls per shot increased to: {BallsPerShot}");
+	}
+
+	public void ScaleExistingBalls()
+	{
+		foreach (Ball x in activeBalls)
+		{
+			x.SetBallDamage(_main.GetDamageMult());
+		}
 	}
 }
