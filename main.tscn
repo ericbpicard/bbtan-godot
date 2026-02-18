@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://datcer3s31q2s" path="res://cannon.tscn" id="2_0xm2m"]
 [ext_resource type="PackedScene" uid="uid://d326a4mh1hio6" path="res://brick.tscn" id="2_1bvp3"]
 [ext_resource type="Script" uid="uid://b021cmipicje4" path="res://DespawnZone.cs" id="3_h2yge"]
+[ext_resource type="PackedScene" uid="uid://vutii55l2qlf" path="res://power_up.tscn" id="3_lquwl"]
 
 [sub_resource type="SegmentShape2D" id="SegmentShape2D_7dm0k"]
 
@@ -20,6 +21,7 @@ _leftWall = NodePath("Walls/LeftWall")
 _rightWall = NodePath("Walls/RightWall")
 _topWall = NodePath("Walls/TopWall")
 BrickScene = ExtResource("2_1bvp3")
+PowerUpScene = ExtResource("3_lquwl")
 
 [node name="Walls" type="Node2D" parent="." unique_id=1705868467]
 

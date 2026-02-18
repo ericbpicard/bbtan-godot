@@ -1,3 +1,4 @@
+#nullable enable
 using Godot;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ public partial class Cannon : Node2D
 	[Export] public float ShootForce { get; set; } = 1800f;  // Tune speed
 	[Export] public float BallSpread = 6f;
 	[Export] public float ShootCooldown = 0.06f;
-	[Export] public int BallsPerShot = 0;
+	[Export] public int BallsPerShot = 1;
 	private Vector2 dragStart;
 	private bool isDragging = false;
 	private Ball restingBall;  // Pre-shot ball at tip
@@ -19,7 +20,7 @@ public partial class Cannon : Node2D
 	private Timer cooldownTimer;
 	private bool canShoot = true;
 	private bool hasRestingBall = false;
-
+	private Main? _main;
 	public float _ballRadius = 12f;
 
 	//start passing stuff 
@@ -29,6 +30,7 @@ public partial class Cannon : Node2D
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
+		_main = GetParent<Main>();
 		var screenSize = GetViewportRect().Size;
 		Position = new Vector2(screenSize.X / 2f, screenSize.Y - 50f);
 		SpawnRestingBall(Vector2.Zero);
@@ -101,8 +103,8 @@ public partial class Cannon : Node2D
 		restingBall.Position = position;
 
 		restingBall.LinearVelocity = Vector2.Zero;  // Stationary
-													
-		CallDeferred(MethodName.AddChild,restingBall);
+
+		CallDeferred(MethodName.AddChild, restingBall);
 		hasRestingBall = true;
 	}
 
@@ -129,6 +131,7 @@ public partial class Cannon : Node2D
 		currentBall.CollisionMask = 1;
 		currentBall.GlobalPosition = restingBall.GlobalPosition;
 		currentBall.LinearVelocity = Vector2.Zero;
+		currentBall.SetBallDamage(_main.GetDamageMult());
 		GetTree().CurrentScene.CallDeferred(MethodName.AddChild, currentBall);
 		activeBalls.Add(currentBall);
 		currentBall.ApplyCentralImpulse(aimVector * ShootForce);
@@ -137,12 +140,12 @@ public partial class Cannon : Node2D
 	public void OnBallLanded(Node body)
 	{
 		GD.Print(body.GetType());
-		if (body is Ball ball)  
+		if (body is Ball ball)
 		{
 			Vector2 landedPosition = ball.GlobalPosition;
 			landedPosition.Y = GetViewportRect().Size.Y - 50f;
 			ball.GlobalPosition = landedPosition;
-			ball.LinearVelocity = new Vector2(0,0);
+			ball.LinearVelocity = new Vector2(0, 0);
 
 			if (!hasRestingBall)
 			{
@@ -163,7 +166,6 @@ public partial class Cannon : Node2D
 					ball.QueueFree();
 					activeBalls.Remove(ball);
 					CheckAllLanded();
-
 				}));
 			}
 		}
@@ -177,6 +179,7 @@ public partial class Cannon : Node2D
 			canShoot = true;
 		}
 	}
+
 
 	private Vector2 GetClampedAimVector(Vector2 rawDirection)
 	{

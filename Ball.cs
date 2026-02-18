@@ -8,6 +8,8 @@ public partial class Ball : RigidBody2D
 	[Export] public float bottomMargin = 0f; // Extra buffer below screen bottom
 	private float lastSpeed = 0f;
 	private Vector2 screenSize;
+
+	private int _ballDamage = 1;
 	private int bounceCount = 0;
 	public CollisionShape2D collisionShape;
 	private float _radius;
@@ -144,4 +146,9 @@ public partial class Ball : RigidBody2D
 			brick.TakeHit(1);   // damage per hit
 		}
 	}
+	public void SetBallDamage(int damage)
+	{
+		this._ballDamage = damage;
+	}
 }
+
